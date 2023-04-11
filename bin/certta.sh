@@ -73,9 +73,9 @@ function get_serial() {
 # Print results
 function print_results() { 
 	if [[ ! -z "$conf_file" ]]; then
-		printf "cert=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=$conf_file\n"
+		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='$conf_file'\n"
 	else 
-		printf "cert=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=NONE\n"                
+		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='NONE'\n"                
 	fi
 }
 
