@@ -59,14 +59,11 @@ function where_is_conf() {
 
 # Get end_date of pem_file
 function get_end_date() { 
-	#end_date=$(openssl x509 -noout -enddate -in "$pem_file" | awk -F '=' '{print $2}')
-	#end_date=$(openssl x509 -enddate -noout -in "$pem_file" 2>/dev/null | sed -n 's/notAfter=//p')
 	end_date=$(openssl x509 -enddate -noout -in "$1" 2>/dev/null | sed -n 's/notAfter=//p') 
 }
 
 # Get serial of pem_file
 function get_serial() { 
-	#serial=$(openssl x509 -noout -serial -in "$pem_file" 2>/dev/null | sed -n 's/serial=//p')
 	serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p') 
 }
 
@@ -114,8 +111,8 @@ where_is_conf
 for conf_file in ${CONF_FILES[@]}; do
     # Check if the file matches any exclusion EXCLUSION_PATTERNS
     if is_excluded "$conf_file"; then
-		continue # Skip excluded files
-	fi
+	continue # Skip excluded files
+    fi
     # Search for INCLUSION_PATTERN in the conf file
     result=$(grep -E "$INCLUSION_PATTERN" "$conf_file")
     # If INCLUSION_PATTERN is found
@@ -128,15 +125,15 @@ for conf_file in ${CONF_FILES[@]}; do
             # Check if pem file is in PEM format
             if [ "$(file -b --mime-type "$pem_file")" != "application/x-x509-ca-cert" ]; then
                 # Get end date of the pem file
-				get_end_date $pem_file
-				# Get serial of the pem file
-				get_serial $pem_file
+		get_end_date $pem_file
+		# Get serial of the pem file
+		get_serial $pem_file
                 # Skip if end date is not defined
                 if [[ ! -z "$end_date" ]]; then
-                    # Make it epoch
+                	# Make it epoch
                 	epoch=$(date -d "${end_date}" +%s)
-				    # Print results
-					print_results
+			# Print results
+			print_results
                 fi
             fi
         fi
