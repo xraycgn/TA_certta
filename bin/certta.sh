@@ -14,7 +14,7 @@ fi
 
 # list of PEM_FILES including path outside of SPLUNK_HOME
 # PEM_FILES=("/path/a/z.pem" "/path/c/y.pem")
-PEM_FILES=("/home/Matze/server.pem")
+PEM_FILES=("/path/a/server.pem")
 
 # INCLUSION_PATTERN to search for in the conf files
 INCLUSION_PATTERN="serverCert"  
@@ -73,9 +73,9 @@ function get_serial() {
 # Print results
 function print_results() { 
 	if [[ ! -z "$conf_file" ]]; then
-		printf "path=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=$conf_file\n"
+		printf "cert=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=$conf_file\n"
 	else 
-		printf "path=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=NONE\n"                
+		printf "cert=$pem_file expires='$end_date' expires_epoch=$epoch serial=$serial conf=NONE\n"                
 	fi
 }
 
