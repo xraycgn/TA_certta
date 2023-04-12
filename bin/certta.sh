@@ -1,118 +1,139 @@
 #!/bin/bash
 
 # --------
-# cert.sh 
+# cert.sh
 # - version 1.0 - initial
+# - version 1.1 - different PEM file handling as the list of results was to confusing
 
 # ---
 # VARS
 # ---
 # Define the path to search for .pem files
-if [ -z ${SPLUNK_HOME+x} ]; then 
+if [ -z ${SPLUNK_HOME+x} ]; then
     SPLUNK_HOME="/opt/splunk" # Directory path to search for conf files
 fi
 
+# Check for pem files
+# when 'true' it can lead into to many results, each pem file will be listed
+# you can leave it 'false' and list individual files in PEM_FILES
+PEM_CHECK=false
+
 # list of PEM_FILES including path outside of SPLUNK_HOME
 # PEM_FILES=("/path/a/z.pem" "/path/c/y.pem")
-PEM_FILES=("/path/a/server.pem")
+PEM_FILES=("/home/Matze/server.pem")
+
+# Check for conf files
+# when 'true' it will search all conf_file for INCLUSION_PATTERN
+# when 'false' it will search CONF_FILES only
+CONF_CHECK=true
+
+# CONF_FILES=("$SPLUNK_HOME/etc/apps/anyapp/local/web.conf")
+CONF_FILES=("")
 
 # INCLUSION_PATTERN to search for in the conf files
-INCLUSION_PATTERN="serverCert"  
+INCLUSION_PATTERN="serverCert"
 
 # List of wildcard exclusion patterns
 # EXCLUSION_PATTERNS=("*.log" "*.txt" "*.old")
 EXCLUSION_PATTERNS=(
-	"*python_upgrade_readiness_app*" 
-	"*CA.pem" 
-	"*splunk_secure_gateway*"
-	"*baseline*" 
-	"*var/run*"
-	"*site-packages*")
+        "*python_upgrade_readiness_app*"
+        "*CA.pem"
+        "*splunk_secure_gateway*"
+        "*baseline*"
+        "*var/run*"
+        "*site-packages*")
 
-# --- 
-# FUNCTIONS 
-# --- 
+# ---
+# FUNCTIONS
+# ---
 # Function to check if a file matches any exclusion patterns
 function is_excluded() {
-	local file="$1"
-  	for pattern in "${EXCLUSION_PATTERNS[@]}"; do
-    	if [[ $file == $pattern ]]; then
-      		return 0 # File is excluded
-    	fi
-  	done
-  	return 1 # File is not excluded
+        local file="$1"
+        for pattern in "${EXCLUSION_PATTERNS[@]}"; do
+        if [[ $file == $pattern ]]; then
+                return 0 # File is excluded
+        fi
+        done
+        return 1 # File is not excluded
 }
 
 # Search for .pem files in the given path recursively and add to array PEM_FILES`
 function where_is_pem() {
-	if [ -d "$SPLUNK_HOME" ]; then
-    		PEM_FILES+=($(find "$SPLUNK_HOME" -name "*.pem" -type f))
-	fi
+        if [ -d "$SPLUNK_HOME" ]; then
+                PEM_FILES+=($(find "$SPLUNK_HOME" -name "*.pem" -type f))
+        fi
 }
 
 # Find conf files in the search path
 function where_is_conf() {
-	if [ -d "$SPLUNK_HOME" ]; then
+        if [ -d "$SPLUNK_HOME" ]; then
         CONF_FILES+=($(find "$SPLUNK_HOME" -name "*.conf" -type f))
     fi
 }
 
 # Get end_date of pem_file
-function get_end_date() { 
-	end_date=$(openssl x509 -enddate -noout -in "$1" 2>/dev/null | sed -n 's/notAfter=//p') 
+function get_end_date() {
+        #end_date=$(openssl x509 -noout -enddate -in "$pem_file" | awk -F '=' '{print $2}')
+        #end_date=$(openssl x509 -enddate -noout -in "$pem_file" 2>/dev/null | sed -n 's/notAfter=//p')
+        end_date=$(openssl x509 -enddate -noout -in "$1" 2>/dev/null | sed -n 's/notAfter=//p')
 }
 
 # Get serial of pem_file
-function get_serial() { 
-	serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p') 
+function get_serial() {
+        #serial=$(openssl x509 -noout -serial -in "$pem_file" 2>/dev/null | sed -n 's/serial=//p')
+        serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p')
 }
 
 # Print results
-function print_results() { 
-	if [[ ! -z "$conf_file" ]]; then
-		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='$conf_file'\n"
-	else 
-		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='NONE'\n"                
-	fi
+function print_results() {
+        if [[ ! -z "$conf_file" ]]; then
+                printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='$conf_file'\n"
+        else
+                printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='NONE'\n"
+        fi
 }
 
 # ---
-# MAIN 
+# MAIN
 # ---
-where_is_pem
+if $PEM_CHECK; then
+        where_is_pem
+fi
 
 # Loop through each .pem file
 for pem_file in "${PEM_FILES[@]}"; do
     # Check if the file matches any exclusion patterns
     if is_excluded "$pem_file"; then
-    	continue # Skip excluded files
-    fi 
+        continue # Skip excluded files
+    fi
     # Check if the file is readable
     if [ -r "$pem_file" ]; then
-		# Skip certificates in DER format
-    	if [ "$(file -b --mime-type "$pem_file")" != "application/x-x509-ca-cert" ]; then
-	        # Get end date of the pem file
-			get_end_date $pem_file
-			# Get serial of the pem file
-			get_serial $pem_file
-			# Skip if end date is not defined
-			if [[ ! -z "$end_date" ]]; then
-            	# Make it epoch
-            	epoch=$(date -d "${end_date}" +%s)
-				# Print results
-				print_results
+                # Skip certificates in DER format
+        if [ "$(file -b --mime-type "$pem_file")" != "application/x-x509-ca-cert" ]; then
+                # Get end date of the pem file
+                        get_end_date $pem_file
+                        # Get serial of the pem file
+                        get_serial $pem_file
+                        # Skip if end date is not defined
+                        if [[ ! -z "$end_date" ]]; then
+                # Make it epoch
+                epoch=$(date -d "${end_date}" +%s)
+                                # Print results
+                                print_results
             fi
-		fi
+                fi
     fi
 done
 
-where_is_conf
+if $CONF_CHECK; then
+        where_is_conf
+fi
 
 for conf_file in ${CONF_FILES[@]}; do
     # Check if the file matches any exclusion EXCLUSION_PATTERNS
     if is_excluded "$conf_file"; then
-	continue # Skip excluded files
-    fi
+                continue # Skip excluded files
+        fi
     # Search for INCLUSION_PATTERN in the conf file
     result=$(grep -E "$INCLUSION_PATTERN" "$conf_file")
     # If INCLUSION_PATTERN is found
@@ -125,15 +146,15 @@ for conf_file in ${CONF_FILES[@]}; do
             # Check if pem file is in PEM format
             if [ "$(file -b --mime-type "$pem_file")" != "application/x-x509-ca-cert" ]; then
                 # Get end date of the pem file
-		get_end_date $pem_file
-		# Get serial of the pem file
-		get_serial $pem_file
+                                get_end_date $pem_file
+                                # Get serial of the pem file
+                                get_serial $pem_file
                 # Skip if end date is not defined
                 if [[ ! -z "$end_date" ]]; then
-                	# Make it epoch
-                	epoch=$(date -d "${end_date}" +%s)
-			# Print results
-			print_results
+                    # Make it epoch
+                        epoch=$(date -d "${end_date}" +%s)
+                                    # Print results
+                                        print_results
                 fi
             fi
         fi
