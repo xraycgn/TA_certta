@@ -73,14 +73,11 @@ function where_is_conf() {
 
 # Get end_date of pem_file
 function get_end_date() {
-        #end_date=$(openssl x509 -noout -enddate -in "$pem_file" | awk -F '=' '{print $2}')
-        #end_date=$(openssl x509 -enddate -noout -in "$pem_file" 2>/dev/null | sed -n 's/notAfter=//p')
         end_date=$(openssl x509 -enddate -noout -in "$1" 2>/dev/null | sed -n 's/notAfter=//p')
 }
 
 # Get serial of pem_file
 function get_serial() {
-        #serial=$(openssl x509 -noout -serial -in "$pem_file" 2>/dev/null | sed -n 's/serial=//p')
         serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p')
 }
 
