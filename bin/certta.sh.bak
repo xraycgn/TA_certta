@@ -4,7 +4,6 @@
 # cert.sh
 # - version 1.0 - initial
 # - version 1.1 - different PEM file handling as the list of results was to confusing
-# - version 1.2 - using Splunk BTOOL to find certificates
 
 # ---
 # VARS
@@ -14,10 +13,6 @@ if [ -z ${SPLUNK_HOME+x} ]; then
     SPLUNK_HOME="/opt/splunk" # Directory path to search for conf files
 fi
 
-# Check for certificate with BTOOL
-# when true (defaukt) BTOOL will be used
-BTOOL_CHECK=true
-
 # Check for pem files
 # when 'true' it can lead into to many results, each pem file will be listed
 # you can leave it 'false' and list individual files in PEM_FILES
@@ -25,15 +20,15 @@ PEM_CHECK=false
 
 # list of PEM_FILES including path outside of SPLUNK_HOME
 # PEM_FILES=("/path/a/z.pem" "/path/c/y.pem")
-PEM_FILES=()
+PEM_FILES=("/home/Matze/server.pem")
 
 # Check for conf files
 # when 'true' it will search all conf_file for INCLUSION_PATTERN
 # when 'false' it will search CONF_FILES only
-CONF_CHECK=false
+CONF_CHECK=true
 
 # CONF_FILES=("$SPLUNK_HOME/etc/apps/anyapp/local/web.conf")
-CONF_FILES=()
+CONF_FILES=("")
 
 # INCLUSION_PATTERN to search for in the conf files
 INCLUSION_PATTERN="serverCert"
@@ -85,7 +80,7 @@ function where_is() {
 
     # Loop through the variable and split by new lines
     while read -r line; do
-        #CONF_FILES+=($(echo "$line" | awk '{print $1}'))
+        CONF_FILES+=($(echo "$line" | awk '{print $1}'))
         PEM_FILES+=($(echo "$line" | awk '{print $(NF)}'))
     done <<< "$FIELDS"
 
@@ -115,13 +110,6 @@ function print_results() {
 # ---
 # MAIN
 # ---
-
-# use btool
-if $BTOOL_CHECK; then
-   where_is
-fi
-
-# use find
 if $PEM_CHECK; then
     where_is_pem
 fi
@@ -132,7 +120,6 @@ for pem_file in "${PEM_FILES[@]}"; do
     if is_excluded "$pem_file"; then
         continue # Skip excluded files
     fi
-    pem_file=$(echo "${pem_file/\$SPLUNK_HOME/$SPLUNK_HOME}") 
     # Check if the file is readable
     if [ -r "$pem_file" ]; then
         # Skip certificates in DER format
