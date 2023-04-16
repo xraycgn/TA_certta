@@ -29,7 +29,7 @@ PEM_FILES=()
 # FUNCTIONS
 # ---
 
-# Find pem with Splunk btool
+# Find pem with Splunk BTOOL
 function where_is() {
     # run BTOOL and feed variable FIELDS
     FIELDS=$(for i in inputs server outputs web; do $SPLUNK_HOME/bin/splunk btool $i list --debug | grep -iv "sslVerifyServerCert" | grep -i "serverCert\|caCertFile\|sslRootCAPath"; done)
@@ -65,7 +65,7 @@ function get_issuer() {
 # MAIN
 # ---
 
-# use btool
+# use BTOOL
 if $BTOOL_CHECK; then
    where_is
 fi
