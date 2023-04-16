@@ -10,6 +10,7 @@
 # ---
 # VARS
 # ---
+
 # Define the path to search for .pem files
 if [ -z ${SPLUNK_HOME+x} ]; then
     SPLUNK_HOME="/opt/splunk" # Directory path to search for conf files
@@ -27,14 +28,16 @@ PEM_FILES=()
 # ---
 # FUNCTIONS
 # ---
+
 # Find pem with Splunk btool
 function where_is() {
+    # run BTOOL and feed variable FIELDS
     FIELDS=$(for i in inputs server outputs web; do $SPLUNK_HOME/bin/splunk btool $i list --debug | grep -iv "sslVerifyServerCert" | grep -i "serverCert\|caCertFile\|sslRootCAPath"; done)
 
     # Set IFS to newline
     IFS=$'\n'
 
-    # Loop through the variable and split by new lines
+    # Loop through the variable FIELDS and split by new lines and feed array PEM_FILES
     while read -r line; do
         PEM_FILES+=($(echo "$line" | awk '{print $(NF)}'))
     done <<< "$FIELDS"
@@ -55,17 +58,7 @@ function get_serial() {
 
 # Get issuer common name (cn) of pem_file
 function get_issuer() {
-    #issuer=$(openssl x509 -noout -issuer -in "$1" 2>/dev/null | awk -F ',' '{print $(NF-1)}' | sed -e 's/ //g' | sed -n 's/CN=//p')
     issuer=$(openssl x509 -noout -issuer -in "$1" 2>/dev/null | sed -n 's/.*CN[[:space:]]=[[:space:]]//p' | awk -F ',' '{print $1}')
-}
-
-# Print results
-function print_results() {
-    if [[ ! -z "$conf_file" ]]; then
-    	printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='$conf_file'\n"
-    else
-        printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' conf='NONE'\n"
-    fi
 }
 
 # ---
@@ -79,21 +72,30 @@ fi
 
 # Loop through each .pem file
 for pem_file in "${PEM_FILES[@]}"; do
+    # change $SPLUNK_HOME string against variable
     pem_file=$(echo "${pem_file/\$SPLUNK_HOME/$SPLUNK_HOME}") 
+
     # Check if the file is readable
     if [ -r "$pem_file" ]; then
+
         # Skip certificates in DER format
         if [ "$(file -b --mime-type "$pem_file")" != "application/x-x509-ca-cert" ]; then
+
             # Get end date of the pem file
             get_end_date $pem_file
+
 	    # Get issuer of the pem file
 	    get_issuer $pem_file
+
             # Get serial of the pem file
             get_serial $pem_file
+
             # Skip if end date is not defined
             if [[ ! -z "$end_date" ]]; then
+
                 # Make it epoch
                 epoch=$(date -d "${end_date}" +%s)
+
                 # Print results
 		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' issuer='$issuer'\n"
             fi
