@@ -16,34 +16,17 @@ if [ -z ${SPLUNK_HOME+x} ]; then
 fi
 
 # Check for certificate with BTOOL
-# when true (defaukt) BTOOL will be used
+# when true (default) BTOOL will be used
+# if false only pem from PEM_FILES will be used
 BTOOL_CHECK=true
 
 # list of PEM_FILES including path outside of SPLUNK_HOME
 # PEM_FILES=("/path/a/z.pem" "/path/c/y.pem")
 PEM_FILES=()
 
-# List of wildcard exclusion patterns
-# EXCLUSION_PATTERNS=("*.log" "*.txt" "*.old")
-EXCLUSION_PATTERNS=(
-    "*python_upgrade_readiness_app*"
-    "*splunk_secure_gateway*" 
-)
-
 # ---
 # FUNCTIONS
 # ---
-# Function to check if a file matches any exclusion patterns
-function is_excluded() {
-    local file="$1"
-    for pattern in "${EXCLUSION_PATTERNS[@]}"; do
-	    if [[ $file == $pattern ]]; then
-    	    return 0 # File is excluded
-    	fi
-    done
-    return 1 # File is not excluded
-}
-
 # Find pem with Splunk btool
 function where_is() {
     FIELDS=$(for i in inputs server outputs web; do $SPLUNK_HOME/bin/splunk btool $i list --debug | grep -iv "sslVerifyServerCert" | grep -i "serverCert\|caCertFile\|sslRootCAPath"; done)
@@ -96,10 +79,6 @@ fi
 
 # Loop through each .pem file
 for pem_file in "${PEM_FILES[@]}"; do
-    # Check if the file matches any exclusion patterns
-    if is_excluded "$pem_file"; then
-        continue # Skip excluded files
-    fi
     pem_file=$(echo "${pem_file/\$SPLUNK_HOME/$SPLUNK_HOME}") 
     # Check if the file is readable
     if [ -r "$pem_file" ]; then
@@ -116,7 +95,6 @@ for pem_file in "${PEM_FILES[@]}"; do
                 # Make it epoch
                 epoch=$(date -d "${end_date}" +%s)
                 # Print results
-                # print_results
 		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' issuer='$issuer'\n"
             fi
         fi
