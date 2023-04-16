@@ -6,6 +6,7 @@
 # - version 1.1 - different PEM file handling as the list of results was to confusing
 # - version 1.2 - using Splunk BTOOL to find certificates
 # - version 1.2.1 - code cleanup as the only option is BTOOL plus extra PEM_FILES
+# - version 1.2.2 - remove duplicates from array PEM_FILES
 
 # ---
 # VARS
@@ -46,6 +47,14 @@ function where_is_waldo() {
     IFS=' '
 }
 
+# Remove duplicates from array PEM_FILES
+function remove_duplicates() {
+    # trim, sort & trim local unique_array to get rid of duplicates
+    local unique_array=($(echo "${PEM_FILES[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+    # overwrite array PEM_FILES with unique_array
+    PEM_FILES=(${unique_array[@]})
+}
+
 # Get end_date of pem_file
 function get_end_date() {
     end_date=$(openssl x509 -noout -enddate -in "$1" 2>/dev/null | sed -n 's/notAfter=//p')
@@ -69,6 +78,9 @@ function get_issuer() {
 if $BTOOL_CHECK; then
    where_is_waldo
 fi
+
+# remove duplictes from array PEM_FILES
+remove_duplicates
 
 # Loop through each .pem file
 for pem_file in "${PEM_FILES[@]}"; do
