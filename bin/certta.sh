@@ -65,11 +65,6 @@ function get_serial() {
     serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p')
 }
 
-# Get issuer common name (cn) of pem_file
-function get_issuer() {
-    issuer=$(openssl x509 -noout -issuer -in "$1" 2>/dev/null | sed -n 's/.*CN[[:space:]]=[[:space:]]//p' | awk -F ',' '{print $1}')
-}
-
 # ---
 # MAIN
 # ---
@@ -96,9 +91,6 @@ for pem_file in "${PEM_FILES[@]}"; do
             # Get end date of the pem file
             get_end_date $pem_file
 
-	    # Get issuer of the pem file
-	    get_issuer $pem_file
-
             # Get serial of the pem file
             get_serial $pem_file
 
@@ -109,7 +101,7 @@ for pem_file in "${PEM_FILES[@]}"; do
                 epoch=$(date -d "${end_date}" +%s)
 
                 # Print results
-		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial' issuer='$issuer'\n"
+		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial'\n"
             fi
         fi
     fi
