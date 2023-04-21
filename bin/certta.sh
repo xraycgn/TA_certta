@@ -7,6 +7,8 @@
 # - version 1.2 - using Splunk BTOOL to find certificates
 # - version 1.2.1 - code cleanup as the only option is BTOOL plus extra PEM_FILES
 # - version 1.2.2 - remove duplicates from array PEM_FILES
+# - version 1.2.2.1 - removed issuer info as the field stays blank
+# - version 1.2.2.2 - changed printf layout
 
 # ---
 # VARS
@@ -98,10 +100,10 @@ for pem_file in "${PEM_FILES[@]}"; do
             if [[ ! -z "$end_date" ]]; then
 
                 # Make it epoch
-                epoch=$(date -d "${end_date}" +%s)
+                epoch=$(date -d "${end_date}" +%s.%6N)
 
                 # Print results
-		printf "cert='$pem_file' expires='$end_date' expires_epoch='$epoch' serial='$serial'\n"
+                printf "cert=\"$pem_file\" expires=\"$end_date\" expires_epoch=\"$epoch\" serial=\"$serial\"\n"
             fi
         fi
     fi
