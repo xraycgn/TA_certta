@@ -10,19 +10,20 @@
 # - version 1.2.2.1 - removed issuer info as the field stays blank
 # - version 1.2.2.2 - changed printf layout
 # - version 1.3 - use external config.sh file
+# - version 1.3.1 - made the source config.sh handling error-free
 
 # ---
 # VARS
 # ---
 
-if [ -f ../local/config.sh ]; then
+if [ -f $(dirname $0)/../local/config.sh ]; then
     # Relative path to the external config file
-    source ../local/config.sh
-elif [ -f ../default/config.sh ]; then
+    source $(dirname $0)/../local/config.sh
+elif [ -f $(dirname $0)/../default/config.sh ]; then
     # Relative path to the external default config file
-    source ../default/config.sh
+    source $(dirname $0)/../default/config.sh
 else
-    printf "ERROR $0 missing variables, check config.sh file.\n"
+    printf "log_level=\"ERROR\" event_message=\"$0 missing variables, check config.sh file.\"\n"
     exit 1
 fi
 
@@ -92,7 +93,7 @@ for pem_file in "${PEM_FILES[@]}"; do
                 # Make it epoch
                 epoch=$(date -d "${end_date}" +%s.%6N)
                 # Print results
-                printf "cert=\"$pem_file\" expires=\"$end_date\" expires_epoch=\"$epoch\" serial=\"$serial\"\n"
+                printf "log_level=\"INFO\" cert=\"$pem_file\" expires=\"$end_date\" expires_epoch=\"$epoch\" serial=\"$serial\"\n"
             fi
         fi
     fi
