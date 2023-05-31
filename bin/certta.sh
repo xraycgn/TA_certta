@@ -11,6 +11,8 @@
 # - version 1.2.2.2 - changed printf layout
 # - version 1.3 - use external config.sh file
 # - version 1.3.1 - made the source config.sh handling error-free
+# - version 1.3.2 - added issuer CN info
+
 
 # ---
 # VARS
@@ -63,6 +65,11 @@ function get_serial() {
     serial=$(openssl x509 -noout -serial -in "$1" 2>/dev/null | sed -n 's/serial=//p')
 }
 
+# Get issuer CN of the pem_file
+function get_issuer_cn () {
+    issuer_cn=$(openssl x509 -noout -issuer -in "$1" 2>/dev/null | awk -F 'CN=' '{ print $(NF) }')
+}
+
 # ---
 # MAIN
 # ---
@@ -88,12 +95,14 @@ for pem_file in "${PEM_FILES[@]}"; do
             get_end_date $pem_file
             # Get serial of the pem file
             get_serial $pem_file
+            # Get issuer CN of the pem file
+            get_issuer_cn $pem_file
             # Skip if end date is not defined
             if [[ ! -z "$end_date" ]]; then
                 # Make it epoch
                 epoch=$(date -d "${end_date}" +%s.%6N)
                 # Print results
-                printf "log_level=\"INFO\" cert=\"$pem_file\" expires=\"$end_date\" expires_epoch=\"$epoch\" serial=\"$serial\"\n"
+                printf "log_level=\"INFO\" cert=\"$pem_file\" expires=\"$end_date\" expires_epoch=\"$epoch\" serial=\"$serial\" issuer=\"$issuer_cn\"\n"
             fi
         fi
     fi
