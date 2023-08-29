@@ -13,6 +13,7 @@
 # - version 1.3.1 - made the source config.sh handling error-free
 # - version 1.3.2 - added issuer CN info
 # - version 1.3.2.1 - added DEPRECATED values to recognize certs in older releases
+# - version 1.3.2.2 - added authentication/idpCertPath in where_is_waldo
 
 # ---
 # VARS
@@ -36,7 +37,8 @@ fi
 # Find pem with Splunk BTOOL
 function where_is_waldo() {
     # run BTOOL and feed variable FIELDS
-    FIELDS=$(for i in inputs server outputs web; do $SPLUNK_HOME/bin/splunk btool $i list --debug | grep -iv "sslVerifyServerCert" | grep -i "serverCert\|caCertFile\|sslRootCAPath\|caCertPath"; done)
+    FIELDS=$(for i in authentication inputs server outputs web; do $SPLUNK_HOME/bin/splunk btool $i list --debug | grep -iv "sslVerifyServerCert" | grep -i "serverCert\|caCertFile\|sslRootCAPath\|caCertPath\|idpCertPath"; done)
+
     # Set IFS to newline
     IFS=$'\n'
     # Loop through the variable FIELDS and split by new lines and feed array PEM_FILES
